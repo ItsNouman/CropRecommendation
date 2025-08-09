@@ -2,13 +2,20 @@ from flask import Flask, request, render_template
 import numpy as np
 import pickle
 import os
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# load model & scalers from same folder
 model = pickle.load(open(os.path.join(BASE_DIR, "model.pkl"), "rb"))
 sc = pickle.load(open(os.path.join(BASE_DIR, "standardscaler.pkl"), "rb"))
 mx = pickle.load(open(os.path.join(BASE_DIR, "minmaxscaler.pkl"), "rb"))
 
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
+# explicit template/static folders (they are inside api/)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
+)
 
 @app.route('/')
 def index():
@@ -16,17 +23,20 @@ def index():
 
 @app.route("/predict", methods=['POST'])
 def predict():
-    N = request.form['Nitrogen']
-    P = request.form['Phosporus']
-    K = request.form['Potassium']
-    temp = request.form['Temperature']
-    humidity = request.form['Humidity']
-    ph = request.form['pH']
-    rainfall = request.form['Rainfall']
+    try:
+        feature_list = [
+            float(request.form['Nitrogen']),
+            float(request.form['Phosporus']),   # keep same name as your form
+            float(request.form['Potassium']),
+            float(request.form['Temperature']),
+            float(request.form['Humidity']),
+            float(request.form['pH']),
+            float(request.form['Rainfall'])
+        ]
+    except Exception as e:
+        return render_template("index.html", result=f"Invalid input: {e}")
 
-    feature_list = [N, P, K, temp, humidity, ph, rainfall]
     single_pred = np.array(feature_list).reshape(1, -1)
-
     mx_features = mx.transform(single_pred)
     sc_mx_features = sc.transform(mx_features)
     prediction = model.predict(sc_mx_features)
@@ -40,8 +50,9 @@ def predict():
         21: "Chickpea", 22: "Coffee"
     }
 
-    result = crop_dict.get(prediction[0], "Sorry, could not determine best crop.")
+    result = crop_dict.get(int(prediction[0]), "Sorry, could not determine best crop.")
     return render_template('index.html', result=f"{result} is the best crop to be cultivated right there")
 
 if __name__ == "__main__":
-    app.run()
+    # keep this for local testing
+    app.run(debug=True, port=5000)
