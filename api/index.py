@@ -1,24 +1,20 @@
-from flask import Flask,request,render_template
+from flask import Flask, request, render_template
 import numpy as np
-import pandas
-import sklearn
 import pickle
 import os
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model = pickle.load(open(os.path.join(BASE_DIR, "../model.pkl"), "rb"))
-sc = pickle.load(open(os.path.join(BASE_DIR, "../standardscaler.pkl"), "rb"))
-mx = pickle.load(open(os.path.join(BASE_DIR, "../minmaxscaler.pkl"), "rb"))
 
+model = pickle.load(open(os.path.join(BASE_DIR, "model.pkl"), "rb"))
+sc = pickle.load(open(os.path.join(BASE_DIR, "standardscaler.pkl"), "rb"))
+mx = pickle.load(open(os.path.join(BASE_DIR, "minmaxscaler.pkl"), "rb"))
 
-
-app = Flask(__name__)
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
 
 @app.route('/')
 def index():
     return render_template("index.html")
 
-@app.route("/predict",methods=['POST'])
+@app.route("/predict", methods=['POST'])
 def predict():
     N = request.form['Nitrogen']
     P = request.form['Phosporus']
@@ -35,16 +31,17 @@ def predict():
     sc_mx_features = sc.transform(mx_features)
     prediction = model.predict(sc_mx_features)
 
-    crop_dict = {1: "Rice", 2: "Maize", 3: "Jute", 4: "Cotton", 5: "Coconut", 6: "Papaya", 7: "Orange",
-                 8: "Apple", 9: "Muskmelon", 10: "Watermelon", 11: "Grapes", 12: "Mango", 13: "Banana",
-                 14: "Pomegranate", 15: "Lentil", 16: "Blackgram", 17: "Mungbean", 18: "Mothbeans",
-                 19: "Pigeonpeas", 20: "Kidneybeans", 21: "Chickpea", 22: "Coffee"}
+    crop_dict = {
+        1: "Rice", 2: "Maize", 3: "Jute", 4: "Cotton", 5: "Coconut",
+        6: "Papaya", 7: "Orange", 8: "Apple", 9: "Muskmelon",
+        10: "Watermelon", 11: "Grapes", 12: "Mango", 13: "Banana",
+        14: "Pomegranate", 15: "Lentil", 16: "Blackgram", 17: "Mungbean",
+        18: "Mothbeans", 19: "Pigeonpeas", 20: "Kidneybeans",
+        21: "Chickpea", 22: "Coffee"
+    }
 
-    if prediction[0] in crop_dict:
-        crop = crop_dict[prediction[0]]
-        result = "{} is the best crop to be cultivated right there".format(crop)
-    else:
-        result = "Sorry, we could not determine the best crop to be cultivated with the provided data."
-    return render_template('index.html',result = result)
+    result = crop_dict.get(prediction[0], "Sorry, could not determine best crop.")
+    return render_template('index.html', result=f"{result} is the best crop to be cultivated right there")
 
-
+if __name__ == "__main__":
+    app.run()
