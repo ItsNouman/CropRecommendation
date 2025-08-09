@@ -3,10 +3,13 @@ import numpy as np
 import pandas
 import sklearn
 import pickle
+import os
 
-model = pickle.load(open('model.pkl','rb'))
-sc = pickle.load(open('standardscaler.pkl','rb'))
-mx = pickle.load(open('minmaxscaler.pkl','rb'))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model = pickle.load(open(os.path.join(BASE_DIR, "../model.pkl"), "rb"))
+sc = pickle.load(open(os.path.join(BASE_DIR, "../standardscaler.pkl"), "rb"))
+mx = pickle.load(open(os.path.join(BASE_DIR, "../minmaxscaler.pkl"), "rb"))
+
 
 
 app = Flask(__name__)
@@ -45,5 +48,3 @@ def predict():
     return render_template('index.html',result = result)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
